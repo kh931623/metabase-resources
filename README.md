@@ -1,5 +1,9 @@
 # metabase-resources-management
 
+## Prerequisite
+- [Bun JS Runtime](https://bun.sh/)
+
+## How to use
 To install dependencies:
 
 ```bash
