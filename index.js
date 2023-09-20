@@ -1,10 +1,27 @@
-import { getSessionToken, getCollections } from "./modules/metabase-api";
-// console.log("Hello via Bun!");
-// console.log("env:", process.env)
+import {
+  pipe,
+  last,
+  prop,
+} from "ramda";
 
-const token = await getSessionToken()
+import {
+  getSessionToken,
+  getCollections,
+  getCollectionItems
+} from "./modules/metabase-api";
+
+const getLastItemId = pipe(
+  last,
+  prop('id')
+)
+
+// const token = await getSessionToken()
 const collections = await getCollections()
+const cid = getLastItemId(collections)
+const items = await getCollectionItems(2)
 
-console.log('token:', token)
+// console.log('token:', token)
 console.log('collections:', collections)
+console.log('items:', items)
+
 
