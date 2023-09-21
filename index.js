@@ -7,21 +7,36 @@ import {
 import {
   getSessionToken,
   getCollections,
-  getCollectionItems
+  getCollectionItems,
+  getCard,
 } from "./modules/metabase-api";
 
-const getLastItemId = pipe(
-  last,
-  prop('id')
-)
+import {
+  getAutomatedCollectionId,
+  initilizeMetabase,
+} from "./modules/metabase-operations";
+import queries from "@resources/queries";
 
-// const token = await getSessionToken()
-const collections = await getCollections()
-const cid = getLastItemId(collections)
-const items = await getCollectionItems(2)
+const main = async () => {
+  // check if collection `automated` exists
+  // if not then run initialization (create collection `automated` and other resources under it)
+  // else run sync up resources between repo and metabase
+  const automatedCollectionId = await getAutomatedCollectionId()
 
-// console.log('token:', token)
-console.log('collections:', collections)
-console.log('items:', items)
+  if (!automatedCollectionId) await initilizeMetabase()
+  else console.log('sync up!')
+}
 
+const test = async () => {
+  const items = await getCollectionItems(2)
+  const card = await getCard(1)
+  const c2 = await getCard(3)
 
+  // console.log(items)
+  console.log('card:', card)
+  // console.log('card:', c2)
+  // console.log('q: ', queries)
+}
+
+main()
+// test()
