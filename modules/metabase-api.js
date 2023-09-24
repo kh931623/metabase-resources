@@ -12,6 +12,7 @@ const METABASE_SESSION_API_URL = `${METABASE_API_URL}/session`
 const METABASE_COLLECTION_API_URL = `${METABASE_API_URL}/collection`
 const METABASE_CARD_API_URL = `${METABASE_API_URL}/card`
 const METABASE_DATABASE_API_URL = `${METABASE_API_URL}/database`
+const METABASE_DASHBOARD_API_URL = `${METABASE_API_URL}/dashboard`
 
 const computeCollectionItemsURL = (collectionId) => `${METABASE_COLLECTION_API_URL}/${collectionId}/items`
 const computeCardIdURL = (cardId) => `${METABASE_CARD_API_URL}/${cardId}`
@@ -60,6 +61,18 @@ export const getDatabases = async () => {
   return res.data
 }
 
+export const getDashboard = async (id) => {
+  const url = `${METABASE_DASHBOARD_API_URL}/${id}`
+
+  const res = await axios.get(url, {
+    headers: {
+      'X-Metabase-Session': await getSessionToken()
+    }
+  })
+
+  return res.data
+}
+
 /** 
  * @typedef {Object} CollectionData
  * @property {string} name
@@ -89,7 +102,7 @@ export const createCollection = async (payload) => {
  * @property {string} name
  * @property {object} dataset_query - value must be a map
  * @property {string} display - value must be a non-blank string
- * @property {object} [visualization_settings] - value must be a map
+ * @property {object} visualization_settings - value must be a map (empty map is fine)
  * @property {object[]} [parameters] - value may be nil, or if non-nil, value must be an array. Each parameter must be a map with :id and :type keys
  * @property {string} [description] - value may be nil, or if non-nil, value must be a non-blank string
  * @property {number} [collection_position] - value may be nil, or if non-nil, value must be an integer greater than zero
@@ -131,4 +144,51 @@ export const getCard = async (cardId) => {
   console.log('create card res: ', res.data)
 
   return res.data
+}
+
+/**
+ * @typedef DashbaordPayload
+ * @property {string} name - value must be a non-blank string
+ * @property {string} description - value may be nil, or if non-nil, value must be a string
+ * @property {object[]} parameters - value may be nil, or if non-nil, value must be an array. Each parameter must be a map with :id and :type keys
+ * @property {number} [cache_ttl] - value may be nil, or if non-nil, value must be an integer greater than zero
+ * @property {number} [collection_id] - value may be nil, or if non-nil, value must be an integer greater than zero
+ * @property {number} [collection_position] - value may be nil, or if non-nil, value must be an integer greater than zero
+ */
+
+/**
+ * @param {DashbaordPayload} payload
+ */
+export const createDashboard = async (payload) => {
+  console.log('create dashboard payload: ', payload)
+
+  const res = await axios.post(METABASE_DASHBOARD_API_URL, payload, {
+    headers: {
+      'X-Metabase-Session': await getSessionToken()
+    }
+  })
+
+  console.log('created dashboard', res.data)
+
+  return res.data
+}
+
+export const linkCardsToDashboard = async (dashboardId, cards) => {
+  const url = `${METABASE_DASHBOARD_API_URL}/${dashboardId}/cards`
+
+  try {
+    const res = await axios.put(url, { cards }, {
+      headers: {
+        'X-Metabase-Session': await getSessionToken()
+      }
+    })
+
+    console.log('link cards res: ', res.data)
+
+    return res.data
+  } catch (error) {
+    console.error(error.response.data)
+    console.error(error.toJSON())
+    return null
+  }
 }

@@ -1,7 +1,7 @@
 import example from "./modules/example";
-
-export const q1 = 'this is a test string'
+import smallOrders from './modules/example-2'
 
 export default [
   example,
+  smallOrders,
 ]

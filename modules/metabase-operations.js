@@ -9,13 +9,17 @@ import {
   createCollection,
   getDatabases,
   createCard,
+  createDashboard,
+  linkCardsToDashboard,
 } from "./metabase-api";
 import queries from "@resources/queries";
+import dashboards from '@resources/dashboards'
 import {
   listToMap,
 } from "@utils";
 import {
   formatCard,
+  formatDashboard,
 } from "@utils/metabase-resources-formatter.js";
 import logger from '@logger'
 
@@ -45,6 +49,25 @@ export const getAutomatedCollectionId = async () => {
   return null
 }
 
+const insertDashboards = async (collection, dashboards) => {
+  const formattedDashboards = map(formatDashboard(collection), dashboards)
+
+  await Promise.all(map(createDashboard, formattedDashboards))
+}
+
+const insertDashboardAndRelatedCards = async (formattedDashboard) => {
+  console.log('formatted dashboard: ', formattedDashboard)
+  const {
+    name,
+    collection_id,
+    cards
+  } = formattedDashboard
+
+  const createdDashboard = await createDashboard({ name, collection_id })
+
+  await linkCardsToDashboard(createdDashboard.id, cards)
+}
+
 export const initilizeMetabase = async () => {
   logger.info('Initializing Metabase ...')
 
@@ -64,7 +87,12 @@ export const initilizeMetabase = async () => {
 
   logger.debug(formattedCards)
 
-  // write resources to metabase
-  await Promise.all(map(createCard, formattedCards))
+  // create cards
+  const createdCards = await Promise.all(map(createCard, formattedCards))
+
+  // create dashboard and associate cards with them
+  const cardMap = listToMap('name', 'id', createdCards)
+  const formattedDashboards = map(formatDashboard(collection, cardMap), dashboards)
+  await Promise.all(map(insertDashboardAndRelatedCards, formattedDashboards))
 }
 

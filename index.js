@@ -9,6 +9,7 @@ import {
   getCollections,
   getCollectionItems,
   getCard,
+  getDashboard,
 } from "./modules/metabase-api";
 
 import {
@@ -31,11 +32,13 @@ const test = async () => {
   const items = await getCollectionItems(2)
   const card = await getCard(1)
   const c2 = await getCard(3)
+  const d1 = await getDashboard(1)
 
   // console.log(items)
-  console.log('card:', card)
+  // console.log('card:', card)
   // console.log('card:', c2)
   // console.log('q: ', queries)
+  console.log(d1)
 }
 
 main()
