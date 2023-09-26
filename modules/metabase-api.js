@@ -146,6 +146,19 @@ export const getCard = async (cardId) => {
   return res.data
 }
 
+export const deleteCard = async (cardId) => {
+  const url = computeCardIdURL(cardId)
+  const res = await axios.delete(url, {
+    headers: {
+      'X-Metabase-Session': await getSessionToken()
+    }
+  })
+
+  console.log('delete card res: ', res.data)
+
+  return res.data
+}
+
 /**
  * @typedef DashbaordPayload
  * @property {string} name - value must be a non-blank string

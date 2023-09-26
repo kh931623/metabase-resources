@@ -7,14 +7,13 @@ import {
 const SIZE_X = 12
 const SIZE_Y = 9
 
-export const formatCard = curry((collection, databaseMap, card) => {
+export const formatCard = curry((collection_id, databaseMap, card) => {
   const {
     name,
     database,
     query,
   } = card
 
-  const collection_id = collection.id
   const database_id = databaseMap[database]
 
   return {
@@ -47,13 +46,12 @@ const createCardObject = curry((cardMap, cardName, index) => {
   }
 })
 
-export const formatDashboard = curry((collection, cardMap, dashboard) => {
+export const formatDashboard = curry((collection_id, cardMap, dashboard) => {
   const {
     name,
     cards = []
   } = dashboard
 
-  const collection_id = collection.id
   const cardObjects = addIndex(map)(createCardObject(cardMap), cards)
 
   return {

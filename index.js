@@ -3,6 +3,9 @@ import {
   last,
   prop,
 } from "ramda";
+import {
+  detailedDiff,
+} from 'deep-object-diff'
 
 import {
   getSessionToken,
@@ -15,6 +18,7 @@ import {
 import {
   getAutomatedCollectionId,
   initilizeMetabase,
+  syncUpMetabase,
 } from "./modules/metabase-operations";
 import queries from "@resources/queries";
 
@@ -25,20 +29,24 @@ const main = async () => {
   const automatedCollectionId = await getAutomatedCollectionId()
 
   if (!automatedCollectionId) await initilizeMetabase()
-  else console.log('sync up!')
+  else await syncUpMetabase(automatedCollectionId)
 }
 
 const test = async () => {
   const items = await getCollectionItems(2)
-  const card = await getCard(1)
-  const c2 = await getCard(3)
-  const d1 = await getDashboard(1)
+  // const card = await getCard(1)
+  // const c2 = await getCard(3)
+  // const d1 = await getDashboard(1)
 
-  // console.log(items)
+  // const a1 = [1, 2, 3]
+  // const a2 = [2, 3, 4]
+
+  console.log(items)
   // console.log('card:', card)
   // console.log('card:', c2)
   // console.log('q: ', queries)
-  console.log(d1)
+  // console.log(d1)
+  // console.log(detailedDiff(a1, a2))
 }
 
 main()
