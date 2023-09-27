@@ -160,6 +160,30 @@ export const deleteCard = async (cardId) => {
 }
 
 /**
+ * @param {number} cardId
+ * @param {CardData} payload
+ */
+export const updateCard = async (cardId, payload) => {
+  const url = computeCardIdURL(cardId)
+
+  try {
+    const res = await axios.put(url, payload, {
+      headers: {
+        'X-Metabase-Session': await getSessionToken()
+      }
+    })
+
+    console.log('update card res: ', res.data)
+
+    return res.data
+  } catch (error) {
+    console.error(error.response.data)
+    console.error(error.toJSON())
+    return null
+  }
+}
+
+/**
  * @typedef DashbaordPayload
  * @property {string} name - value must be a non-blank string
  * @property {string} description - value may be nil, or if non-nil, value must be a string

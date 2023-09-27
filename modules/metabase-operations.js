@@ -11,6 +11,7 @@ import {
   toPairs,
   filter,
   path,
+  mergeDeepRight,
 } from "ramda";
 import {
   updatedDiff,
@@ -28,6 +29,7 @@ import {
   getCard,
   getDashboard,
   deleteCard,
+  updateCard,
 } from "./metabase-api";
 import queries from "@resources/queries";
 import dashboards from '@resources/dashboards'
@@ -179,6 +181,28 @@ const createMissingCard = async (repoCardMap, metabaseCardMap) => {
   await Promise.all(map(createCard, cardsToCreate))
 }
 
+const updateSingleCard = ({ id, payload }) => updateCard(id, payload)
+
+const updateChangedCards = async (repoCardMap, metabaseCardMap) => {
+  const updated = updatedDiff(metabaseCardMap, repoCardMap)
+
+  console.log('updated: ', updated)
+
+  const updatePayloads = pipe(
+    toPairs,
+    map(([key, newValues]) => {
+      const original = metabaseCardMap[key]
+
+      return {
+        id: original.id,
+        payload: mergeDeepRight(original, newValues)
+      }
+    })
+  )(updated)
+
+  await Promise.all(map(updateSingleCard, updatePayloads))
+}
+
 const syncUpCards = async (collection_id, cardsInRepo, metabaseCards) => {
   const databaseMap = await getDatabaseMap()
   const repoCardMap = computeRepoCardMap(collection_id, databaseMap, cardsInRepo)
@@ -194,6 +218,7 @@ const syncUpCards = async (collection_id, cardsInRepo, metabaseCards) => {
 
   await deleteUnusedCard(repoCardMap, metabaseCardMap)
   await createMissingCard(repoCardMap, metabaseCardMap)
+  await updateChangedCards(repoCardMap, metabaseCardMap)
 }
 
 const syncUpDashboards = async (dashboardsInRepo, metabaseDashboards) => {
