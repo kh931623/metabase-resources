@@ -229,3 +229,17 @@ export const linkCardsToDashboard = async (dashboardId, cards) => {
     return null
   }
 }
+
+export const deleteDashboard = async (dashboardId) => {
+  const url = `${METABASE_DASHBOARD_API_URL}/${dashboardId}`
+
+  const res = await axios.delete(url, {
+    headers: {
+      'X-Metabase-Session': await getSessionToken()
+    }
+  })
+
+  console.log('delete dashboard res: ', res.data)
+
+  return res.data
+}

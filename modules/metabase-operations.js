@@ -12,10 +12,13 @@ import {
   filter,
   path,
   mergeDeepRight,
+  has,
+  keys,
 } from "ramda";
 import {
   updatedDiff,
   detailedDiff,
+  diff,
 } from "deep-object-diff";
 
 import {
@@ -30,6 +33,7 @@ import {
   getDashboard,
   deleteCard,
   updateCard,
+  deleteDashboard,
 } from "./metabase-api";
 import queries from "@resources/queries";
 import dashboards from '@resources/dashboards'
@@ -71,23 +75,16 @@ export const getAutomatedCollectionId = async () => {
   return null
 }
 
-const insertDashboards = async (collection, dashboards) => {
-  const formattedDashboards = map(formatDashboard(collection), dashboards)
-
-  await Promise.all(map(createDashboard, formattedDashboards))
-}
-
 const insertDashboardAndRelatedCards = async (formattedDashboard) => {
-  console.log('formatted dashboard: ', formattedDashboard)
   const {
     name,
     collection_id,
-    cards
+    ordered_cards,
   } = formattedDashboard
 
   const createdDashboard = await createDashboard({ name, collection_id })
 
-  await linkCardsToDashboard(createdDashboard.id, cards)
+  await linkCardsToDashboard(createdDashboard.id, ordered_cards)
 }
 
 const isCard = propEq('card', 'model')
@@ -133,6 +130,13 @@ const computeRepoCardMap = curry((collection_id, databaseMap, cardsInRepo) => {
   )(cardsInRepo)
 })
 
+const computeRepoDashboardMap = curry((collection_id, cardMap, repoDashboards) => {
+  return pipe(
+    map(formatDashboard(collection_id, cardMap)),
+    toNameAndIdentityMap,
+  )(repoDashboards)
+})
+
 const pickMetabaseCardAttrs = pick([
   'name',
   'display',
@@ -141,6 +145,36 @@ const pickMetabaseCardAttrs = pick([
   'visualization_settings',
   'id',
 ])
+
+const pickOrderedCardsAttrs = pick([
+  'card_id',
+  'size_x',
+  'size_y',
+  'row',
+  'col',
+])
+
+const pickMetabaseDashboardAttrs = (metabaseDashboard) => {
+  const {
+    id,
+    name,
+    collection_id,
+    ordered_cards = [],
+  } = metabaseDashboard
+
+  return {
+    id,
+    name,
+    collection_id,
+    ordered_cards: map(pickOrderedCardsAttrs, ordered_cards)
+  }
+}
+
+const computeMetabaseDashboardMap = pipe(
+  map(pickMetabaseDashboardAttrs),
+  toNameAndIdentityMap,
+)
+
 
 const computeMetabaseCardMap = pipe(
   map(pickMetabaseCardAttrs),
@@ -181,7 +215,30 @@ const createMissingCard = async (repoCardMap, metabaseCardMap) => {
   await Promise.all(map(createCard, cardsToCreate))
 }
 
+const createMissingResources = async (createResourceFunc, repoResourceMap, metabaseResourceMap) => {
+  const resourcesToCreate = pipe(
+    toPairs,
+    filter(isKeyNotInMap(metabaseResourceMap)),
+    map(prop(1)),
+  )(repoResourceMap)
+
+  console.log('to create: ', resourcesToCreate)
+  await Promise.all(map(createResourceFunc, resourcesToCreate))
+}
+
+const deleteUnusedResources = async (deleteResourceFunc, repoResourceMap, metabaseResourceMap) => {
+  const idsToDelete = pipe(
+    toPairs,
+    filter(isKeyNotInMap(repoResourceMap)),
+    map(getIdFromPair),
+  )(metabaseResourceMap)
+
+  console.log('id to delete: ', idsToDelete)
+  await Promise.all(map(deleteResourceFunc, idsToDelete))
+}
+
 const updateSingleCard = ({ id, payload }) => updateCard(id, payload)
+const updateLinkedCards = ({ id, ordered_cards }) => linkCardsToDashboard(id, ordered_cards)
 
 const updateChangedCards = async (repoCardMap, metabaseCardMap) => {
   const updated = updatedDiff(metabaseCardMap, repoCardMap)
@@ -203,6 +260,27 @@ const updateChangedCards = async (repoCardMap, metabaseCardMap) => {
   await Promise.all(map(updateSingleCard, updatePayloads))
 }
 
+const updateChangedDashboards = async (repoDashboardMap, metabaseDashboardMap) => {
+  const updated = diff(metabaseDashboardMap, repoDashboardMap)
+  console.log('diff: ', updated)
+
+  const updatePayloads = pipe(
+    filter(has('ordered_cards')),
+    keys,
+    map((key) => {
+      const original = metabaseDashboardMap[key]
+      const newOne = repoDashboardMap[key]
+
+      return {
+        id: original.id,
+        ordered_cards: newOne.ordered_cards
+      }
+    })
+  )(updated)
+
+  await Promise.all(map(updateLinkedCards, updatePayloads))
+}
+
 const syncUpCards = async (collection_id, cardsInRepo, metabaseCards) => {
   const databaseMap = await getDatabaseMap()
   const repoCardMap = computeRepoCardMap(collection_id, databaseMap, cardsInRepo)
@@ -221,12 +299,16 @@ const syncUpCards = async (collection_id, cardsInRepo, metabaseCards) => {
   await updateChangedCards(repoCardMap, metabaseCardMap)
 }
 
-const syncUpDashboards = async (dashboardsInRepo, metabaseDashboards) => {
-  // find what to create
-  // find what to delete
+const syncUpDashboards = async (collection_id, cardMap, dashboardsInRepo, metabaseDashboards) => {
+  const repoDashboardMap = computeRepoDashboardMap(collection_id, cardMap, dashboardsInRepo)
+  const metabaseDashboardMap = computeMetabaseDashboardMap(metabaseDashboards)
 
-  // create dashboards
-  // delete dashboards
+  console.log('r d m: ', repoDashboardMap)
+  console.log('m d m: ', metabaseDashboardMap)
+
+  await createMissingResources(insertDashboardAndRelatedCards, repoDashboardMap, metabaseDashboardMap)
+  await deleteUnusedResources(deleteDashboard, repoDashboardMap, metabaseDashboardMap)
+  await updateChangedDashboards(repoDashboardMap, metabaseDashboardMap)
 }
 
 export const initilizeMetabase = async () => {
@@ -267,5 +349,13 @@ export const syncUpMetabase = async (collection_id) => {
   } = await getCardsAndDashboardsByCollection(collection_id)
 
   await syncUpCards(collection_id, queries, metabaseCards)
+
+  // get updated metabase cards
+  const {
+    metabaseCards: updatedMetabaseCards
+  } = await getCardsAndDashboardsByCollection(collection_id)
+  const cardMap = toNameAndIdMap(updatedMetabaseCards)
+
+  await syncUpDashboards(collection_id, cardMap, dashboards, metabaseDashboards)
 }
 

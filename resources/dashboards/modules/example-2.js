@@ -1,7 +1,7 @@
 export default {
-  name: 'Example Dashboard',
+  name: 'Example Dashboard 2',
   cards: [
-    'Big Orders',
     'Small Orders',
+    'Big Orders',
   ]
 }

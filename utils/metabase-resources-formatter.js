@@ -57,6 +57,6 @@ export const formatDashboard = curry((collection_id, cardMap, dashboard) => {
   return {
     name,
     collection_id,
-    cards: cardObjects,
+    ordered_cards: cardObjects,
   }
 })
