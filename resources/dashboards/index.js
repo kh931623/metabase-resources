@@ -1,7 +1,10 @@
-import example from './modules/example'
-import example2 from './modules/example-2'
+import {
+  resolve,
+} from 'node:path'
 
-export default [
-  example,
-  example2
-]
+import { getResources } from "../common";
+
+const dirPath = resolve(import.meta.dir, './modules/')
+const resources = await getResources(dirPath)
+
+export default resources

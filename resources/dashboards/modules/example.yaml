@@ -1,0 +1,5 @@
+name: Example Dashboard
+enabled: true
+cards:
+  - Big Orders
+  - Small Orders
