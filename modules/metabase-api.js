@@ -123,6 +123,16 @@ export const createCard = async (payload) => {
       }
     })
 
+    const url = computeCardIdURL(res.data.id)
+
+    await axios.put(url, {
+      enable_embedding: true
+    }, {
+      headers: {
+        'X-Metabase-Session': await getSessionToken()
+      }
+    })
+
     console.log('create card res: ', res.data)
 
     return res.data
@@ -200,6 +210,16 @@ export const createDashboard = async (payload) => {
   console.log('create dashboard payload: ', payload)
 
   const res = await axios.post(METABASE_DASHBOARD_API_URL, payload, {
+    headers: {
+      'X-Metabase-Session': await getSessionToken()
+    }
+  })
+
+  const url = `${METABASE_DASHBOARD_API_URL}/${res.data.id}`
+
+  await axios.put(url, {
+    enable_embedding: true,
+  }, {
     headers: {
       'X-Metabase-Session': await getSessionToken()
     }

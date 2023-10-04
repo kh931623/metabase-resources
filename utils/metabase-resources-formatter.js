@@ -27,7 +27,7 @@ export const formatCard = curry((collection_id, databaseMap, card) => {
       },
       database: database_id
     },
-    visualization_settings: {}
+    visualization_settings: {},
   }
 })
 
