@@ -1,0 +1,6 @@
+name: Big Orders
+enabled: true
+database: Sample Database
+query: |
+  select * from Orders o
+  where o.total > 60;

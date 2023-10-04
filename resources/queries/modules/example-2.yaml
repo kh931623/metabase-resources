@@ -1,0 +1,5 @@
+name: Small Orders
+enabled: true
+database: Sample Database
+query: |
+  select * from Orders o where o.total < 30;

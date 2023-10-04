@@ -1,7 +1,10 @@
-import example from "./modules/example";
-import smallOrders from './modules/example-2'
+import {
+  resolve,
+} from 'node:path'
 
-export default [
-  example,
-  smallOrders,
-]
+import { getResources } from "../common";
+
+const dirPath = resolve(import.meta.dir, './modules/')
+const resources = await getResources(dirPath)
+
+export default resources
